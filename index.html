@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ကလောင်သွား - ကဗျာနှင့် ဝတ္ထု စာရေးသားခြင်း</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts for Myanmar -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@300;400;500;600;700&family=Noto+Serif+Myanmar:wght@400;500;600;700&family=Padauk:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --bg-app: #f8fafc;
+      --bg-sidebar: #f1f5f9;
+      --bg-paper: #ffffff;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      --border-color: #e2e8f0;
+      --accent-color: #4f46e5;
+      --accent-hover: #4338ca;
+      --editor-font: 'Noto Serif Myanmar', serif;
+      --editor-size: 18px;
+      --editor-line-height: 2.1;
+    }
+
+    /* Theme: Sepia / Warm Paper (စက္ကူဝါ/မျက်စိအေး) */
+    body.theme-sepia {
+      --bg-app: #efe8d8;
+      --bg-sidebar: #e6dec8;
+      --bg-paper: #fbf7ed;
+      --text-primary: #3b3126;
+      --text-secondary: #756553;
+      --border-color: #dcd1b8;
+      --accent-color: #9a5b25;
+      --accent-hover: #7c471a;
+    }
+
+    /* Theme: Dark Mode (ညမုဒ်) */
+    body.theme-dark {
+      --bg-app: #0f172a;
+      --bg-sidebar: #1e293b;
+      --bg-paper: #162032;
+      --text-primary: #e2e8f0;
+      --text-secondary: #94a3b8;
+      --border-color: #334155;
+      --accent-color: #818cf8;
+      --accent-hover: #6366f1;
+    }
+
+    body {
+      font-family: 'Noto Sans Myanmar', 'Padauk', sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      transition: background-color 0.25s ease, color 0.25s ease;
+      overflow-x: hidden;
+    }
+
+    .app-sidebar {
+      background-color: var(--bg-sidebar);
+      border-color: var(--border-color);
+    }
+
+    .app-paper {
+      background-color: var(--bg-paper);
+      border-color: var(--border-color);
+      box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06);
+    }
+
+    .border-theme {
+      border-color: var(--border-color);
+    }
+
+    .text-muted {
+      color: var(--text-secondary);
+    }
+
+    /* Writing Editor Styling */
+    #writing-editor {
+      font-family: var(--editor-font);
+      font-size: var(--editor-size);
+      line-height: var(--editor-line-height);
+      color: var(--text-primary);
+      background: transparent;
+      resize: none;
+      outline: none;
+      width: 100%;
+      min-height: 62vh;
+      transition: font-size 0.15s ease;
+    }
+
+    /* Novel Mode (ဝတ္ထု မုဒ်) */
+    #writing-editor.mode-novel {
+      text-align: left;
+    }
+    #writing-editor.mode-novel.indent-active {
+      text-indent: 2.2em;
+    }
+
+    /* Poetry Mode (ကဗျာ မုဒ်) */
+    #writing-editor.mode-poetry {
+      text-align: center;
+      line-height: 2.3;
+      letter-spacing: 0.015em;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.7);
+    }
+
+    /* Print Styles for PDF Export */
+    #print-container {
+      display: none;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-container, #print-container * {
+        visibility: visible;
+      }
+      #print-container {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'Noto Serif Myanmar', 'Padauk', serif;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .print-poem {
+        text-align: center;
+        white-space: pre-wrap;
+        line-height: 2.2;
+      }
+      .print-novel {
+        text-align: justify;
+        line-height: 2.0;
+      }
+      .print-novel p {
+        text-indent: 2em;
+        margin-bottom: 0.8em;
+      }
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+  <!-- Top Navigation Header -->
+  <header class="h-14 border-b border-theme px-3 sm:px-5 flex items-center justify-between shrink-0 z-20" style="background-color: var(--bg-paper);">
+    <div class="flex items-center gap-2.5">
+      <!-- Mobile Menu Toggle -->
+      <button id="mobile-menu-btn" onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition" title="မီနူးဖွင့်ရန်">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+      
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white shadow-sm" style="background-color: var(--accent-color);">
+          <i data-lucide="feather" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-base sm:text-lg leading-tight tracking-tight">ကလောင်သွား</h1>
+          <p class="text-[11px] text-muted hidden sm:block">ကဗျာနှင့် ဝတ္ထု ဖန်တီးမှုစတူဒီယို</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: Dual Writing Mode Switcher (ကဗျာ / ဝတ္ထု မျက်နှာပြင်နှစ်မျိုး) -->
+    <div class="flex items-center p-1 rounded-xl border border-theme" style="background-color: var(--bg-sidebar);">
+      <button id="btn-mode-novel" onclick="setWritingMode('novel')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all">
+        <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+        <span>ဝတ္ထု မုဒ်</span>
+      </button>
+      <button id="btn-mode-poetry" onclick="setWritingMode('poetry')" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+        <span>ကဗျာ မုဒ်</span>
+      </button>
+    </div>
+
+    <!-- Right Actions: Auto-save status & Export -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Auto-save Status -->
+      <div id="autosave-status" class="hidden md:flex items-center gap-1.5 text-xs text-muted px-2.5 py-1 rounded-full border border-theme">
+        <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i>
+        <span>အလိုအလျောက် သိမ်းဆည်းပြီးပါပြီ ✓</span>
+      </div>
+
+      <!-- Focus Mode Toggle -->
+      <button onclick="toggleFocusMode()" id="btn-focus" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-theme text-xs font-medium hover:opacity-80 transition" title="အာရုံစူးစိုက်မှု မုဒ်">
+        <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+        <span class="hidden xl:inline">မျက်နှာပြင်ကျယ်</span>
+      </button>
+
+      <!-- Export Button (ထုတ်ယူခြင်း) -->
+      <button onclick="openExportModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs sm:text-sm font-medium shadow-sm hover:opacity-90 transition" style="background-color: var(--accent-color);">
+        <i data-lucide="download" class="w-4 h-4"></i>
+        <span>ထုတ်ယူရန်</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace Area -->
+  <div class="flex-1 flex overflow-hidden relative">
+    
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar()" class="fixed inset-0 bg-black/40 z-20 hidden lg:hidden backdrop-blur-xs"></div>
+
+    <!-- LEFT SIDEBAR: Book & Chapter Organization (စာအုပ်စီစဉ်ခြင်း) -->
+    <aside id="left-sidebar" class="app-sidebar w-72 sm:w-80 border-r flex flex-col shrink-0 fixed lg:static inset-y-0 left-0 z-30 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out">
+      
+      <!-- Book Selector Header -->
+      <div class="p-3.5 border-b border-theme">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted">စာအုပ်စင်</span>
+          <button onclick="openNewBookModal()" class="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md text-white hover:opacity-90 transition" style="background-color: var(--accent-color);">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>စာအုပ်အသစ်</span>
+          </button>
+        </div>
+
+        <!-- Active Book Dropdown -->
+        <div class="relative">
+          <select id="book-selector" onchange="selectBook(this.value)" class="w-full appearance-none rounded-xl border border-theme px-3 py-2.5 pr-8 text-sm font-semibold focus:outline-none cursor-pointer" style="background-color: var(--bg-paper); color: var(--text-primary);">
+          </select>
+          <i data-lucide="chevron-down" class="w-4 h-4 text-muted absolute right-2.5 top-3 pointer-events-none"></i>
+        </div>
+
+        <!-- Book Meta Info & Actions -->
+        <div id="book-meta-bar" class="mt-2.5 flex items-center justify-between text-xs text-muted px-1">
+          <span id="book-author-display" class="truncate">ရေးသားသူ - ...</span>
+          <div class="flex items-center gap-1">
+            <button onclick="openEditBookModal()" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10" title="စာအုပ်အချက်အလက် ပြင်ရန်">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+            </button>
+            <button onclick="confirmDeleteBook()" class="p-1 rounded hover:bg-red-500/10 text-red-500" title="စာအုပ်ဖျက်ရန်">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar Tabs: Chapters (အခန်းများ) vs Notes (မှတ်စုများ) -->
+      <div class="grid grid-cols-2 border-b border-theme text-xs font-semibold">
+        <button id="tab-chapters" onclick="switchSidebarTab('chapters')" class="py-2.5 flex items-center justify-center gap-1.5 border-b-2 transition">
+          <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+          <span>အခန်းများ (<span id="chapter-count-badge">0</span>)</span>
+        </button>
+        <button id="tab-notes" onclick="switchSidebarTab('notes')" class="py-2.5 flex items-center justify-center gap-1.5 border-b-2 border-transparent text-muted transition">
+          <i data-lucide="sticky-note" class="w-3.5 h-3.5"></i>
+          <span>မှတ်စု (Notes)</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: Chapters List (အခန်း Chapter ခွဲခြင်း) -->
+      <div id="panel-chapters" class="flex-1 flex flex-col overflow-hidden">
+        <div class="p-2.5 border-b border-theme flex gap-1.5">
+          <button onclick="addNewChapter('novel')" class="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-theme text-xs font-medium hover:opacity-80 transition" style="background-color: var(--bg-paper);">
+            <i data-lucide="file-plus" class="w-3.5 h-3.5"></i>
+            <span>+ အခန်းသစ်</span>
+          </button>
+          <button onclick="addNewChapter('poetry')" class="flex-1 flex items-center justify-center gap-1 py-1.5 px-2 rounded-lg border border-theme text-xs font-medium hover:opacity-80 transition" style="background-color: var(--bg-paper);">
+            <i data-lucide="feather" class="w-3.5 h-3.5"></i>
+            <span>+ ကဗျာသစ်</span>
+          </button>
+        </div>
+
+        <div id="chapters-list" class="flex-1 overflow-y-auto p-2.5 space-y-1.5">
+          <!-- Chapters injected dynamically -->
+        </div>
+      </div>
+
+      <!-- TAB 2: Notes Panel (မှတ်စု Notes ထည့်ခြင်း) -->
+      <div id="panel-notes" class="flex-1 flex-col overflow-hidden hidden p-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-muted">ဇာတ်ကောင်၊ ဇာတ်အိမ်နှင့် ကာရန်မှတ်စုများ</span>
+          <button onclick="addQuickNoteTemplate()" class="text-[11px] px-2 py-0.5 rounded border border-theme hover:opacity-80" style="background-color: var(--bg-paper);">
+            + ပုံစံထည့်ရန်
+          </button>
+        </div>
+        <textarea id="book-notes-editor" oninput="handleNotesInput()" placeholder="ဤစာအုပ်အတွက် ဇာတ်ကောင်အချက်အလက်များ၊ အကြံဉာဏ်များ သို့မဟုတ် ကာရန်မှတ်စုများကို ဤနေရာတွင် မှတ်သားထားနိုင်ပါသည်..." class="flex-1 w-full rounded-xl border border-theme p-3 text-xs sm:text-sm leading-relaxed resize-none focus:outline-none" style="background-color: var(--bg-paper); color: var(--text-primary);"></textarea>
+        <p class="text-[11px] text-muted mt-2 text-right">မှတ်စုများကို အလိုအလျောက် သိမ်းဆည်းပေးပါသည်။</p>
+      </div>
+    </aside>
+
+    <!-- CENTER WRITING WORKSPACE (စာရေးခြင်း မျက်နှာပြင်) -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+      
+      <!-- Typography & Appearance Toolbar (ဖောင့်နဲ့ အရောင် ရွေးချယ်နိုင်ခြင်း) -->
+      <div class="border-b border-theme px-3 sm:px-6 py-2 flex flex-wrap items-center justify-between gap-2 shrink-0" style="background-color: var(--bg-app);">
+        
+        <!-- Font Controls -->
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1 rounded-lg border border-theme px-2 py-1" style="background-color: var(--bg-paper);">
+            <i data-lucide="type" class="w-3.5 h-3.5 text-muted"></i>
+            <select id="font-family-select" onchange="changeFontFamily(this.value)" class="text-xs bg-transparent focus:outline-none cursor-pointer pr-1">
+              <option value="'Noto Serif Myanmar', serif">မြန်မာ Serif (စာအုပ်ပုံစံ)</option>
+              <option value="'Noto Sans Myanmar', sans-serif">မြန်မာ Sans (ရှင်းလင်း)</option>
+              <option value="'Padauk', sans-serif">ပိတောက် (Padauk)</option>
+            </select>
+          </div>
+
+          <!-- Font Size Adjuster -->
+          <div class="flex items-center rounded-lg border border-theme overflow-hidden" style="background-color: var(--bg-paper);">
+            <button onclick="adjustFontSize(-1)" class="px-2 py-1 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition" title="စာလုံးသေးရန်">A-</button>
+            <span id="font-size-display" class="px-2 text-xs text-muted border-x border-theme">18px</span>
+            <button onclick="adjustFontSize(1)" class="px-2 py-1 text-xs font-semibold hover:bg-black/5 dark:hover:bg-white/10 transition" title="စာလုံးကြီးရန်">A+</button>
+          </div>
+
+          <!-- Novel Paragraph Indent Toggle (Only visible in Novel Mode) -->
+          <button id="btn-indent-toggle" onclick="toggleIndent()" class="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-lg border border-theme text-xs transition" style="background-color: var(--bg-paper);" title="စာပိုဒ်အစ မျဉ်းဝင်ရန်">
+            <i data-lucide="indent" class="w-3.5 h-3.5"></i>
+            <span class="hidden md:inline">စာပိုဒ်ဝင်</span>
+          </button>
+        </div>
+
+        <!-- Theme / Paper Color Selector (စက္ကူအရောင် ရွေးချယ်ရန်) -->
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs text-muted hidden md:inline mr-1">စက္ကူအရောင်:</span>
+          <button onclick="setTheme('light')" id="theme-btn-light" class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-theme text-xs font-medium bg-white text-slate-800 shadow-2xs transition" title="စက္ကူဖြူ">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-100 border border-slate-400"></span>
+            <span class="hidden sm:inline">စက္ကူဖြူ</span>
+          </button>
+          <button onclick="setTheme('sepia')" id="theme-btn-sepia" class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-theme text-xs font-medium bg-[#fbf7ed] text-[#3b3126] shadow-2xs transition" title="စက္ကူဝါ (မျက်စိအေး)">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#e6dec8] border border-[#9a5b25]"></span>
+            <span class="hidden sm:inline">စက္ကူဝါ</span>
+          </button>
+          <button onclick="setTheme('dark')" id="theme-btn-dark" class="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-theme text-xs font-medium bg-slate-800 text-slate-100 shadow-2xs transition" title="ညမုဒ်">
+            <span class="w-2.5 h-2.5 rounded-full bg-slate-900 border border-indigo-400"></span>
+            <span class="hidden sm:inline">ညမုဒ်</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Scrollable Paper Canvas -->
+      <div class="flex-1 overflow-y-auto px-3 sm:px-8 py-6 sm:py-10 flex justify-center">
+        <div id="paper-sheet" class="app-paper w-full max-w-3xl rounded-2xl border p-6 sm:p-12 md:p-14 transition-all duration-200 flex flex-col">
+          
+          <!-- Mode Indicator Badge -->
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-theme">
+            <div class="flex items-center gap-2">
+              <span id="editor-mode-pill" class="text-[11px] font-semibold px-2.5 py-0.5 rounded-full" style="background-color: var(--bg-sidebar); color: var(--accent-color);">
+                ဝတ္ထု အခန်း
+              </span>
+              <span id="editor-book-subtitle" class="text-xs text-muted truncate max-w-[180px] sm:max-w-xs"></span>
+            </div>
+            
+            <!-- Quick Stanza / Divider Insert -->
+            <div class="flex items-center gap-1.5">
+              <button onclick="insertSceneBreak()" class="text-xs text-muted hover:opacity-80 px-2 py-1 rounded border border-theme transition" title="အခန်းကူး သင်္ကေတထည့်ရန်">
+                * * *
+              </button>
+            </div>
+          </div>
+
+          <!-- Chapter / Poem Title Input -->
+          <input type="text" id="chapter-title-input" oninput="handleEditorInput()" placeholder="အခန်းခေါင်းစဉ် သို့မဟုတ် ကဗျာခေါင်းစဉ် ရေးပါ..." class="w-full text-xl sm:text-2xl md:text-3xl font-bold bg-transparent border-none focus:outline-none mb-6 placeholder:opacity-40" style="font-family: var(--editor-font);" />
+
+          <!-- Main Content Textarea -->
+          <textarea id="writing-editor" oninput="handleEditorInput()" placeholder="သင်၏ စိတ်ကူးစိတ်သန်းများကို ဤနေရာတွင် စတင်ရေးဖွဲ့ပါ..."></textarea>
+
+        </div>
+      </div>
+
+      <!-- Footer Status Bar: Live Word, Character & Line Counter (စာလုံးရေ/စာကြောင်းရေ ရေတွက်ခြင်း) -->
+      <footer class="h-10 border-t border-theme px-4 sm:px-6 flex items-center justify-between text-xs text-muted shrink-0" style="background-color: var(--bg-paper);">
+        <div class="flex items-center gap-4 sm:gap-6">
+          <div class="flex items-center gap-1.5" title="စကားလုံး အရေအတွက်">
+            <i data-lucide="align-left" class="w-3.5 h-3.5"></i>
+            <span>စကားလုံးရေ: <strong id="stat-words" class="font-semibold" style="color: var(--text-primary);">0</strong></span>
+          </div>
+          <div class="flex items-center gap-1.5" title="အက္ခရာ စာလုံးရေ">
+            <i data-lucide="hash" class="w-3.5 h-3.5"></i>
+            <span>စာလုံးရေ: <strong id="stat-chars" class="font-semibold" style="color: var(--text-primary);">0</strong></span>
+          </div>
+          <div class="flex items-center gap-1.5" title="စာကြောင်းရေ / စာပိုဒ်ရေ">
+            <i data-lucide="list" class="w-3.5 h-3.5"></i>
+            <span id="stat-lines-label">စာကြောင်းရေ: <strong id="stat-lines" class="font-semibold" style="color: var(--text-primary);">0</strong></span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span class="hidden sm:inline" id="stat-read-time">ဖတ်ရှုချိန်: ~၁ မိနစ်</span>
+          <span id="mobile-save-dot" class="md:hidden w-2 h-2 rounded-full bg-emerald-500" title="သိမ်းဆည်းပြီး"></span>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. New / Edit Book Modal (စာအုပ်အသစ် ဖန်တီးခြင်း) -->
+  <div id="book-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4 backdrop-blur-xs">
+    <div class="app-paper w-full max-w-md rounded-2xl border p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 id="book-modal-title" class="text-lg font-bold">စာအုပ်အသစ် ဖန်တီးရန်</h3>
+        <button onclick="closeBookModal()" class="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">စာအုပ်အမည် *</label>
+          <input type="text" id="input-book-title" placeholder="ဥပမာ - မိုးစက်ပွင့်ကဗျာများ" class="w-full rounded-xl border border-theme px-3.5 py-2.5 text-sm focus:outline-none" style="background-color: var(--bg-app);" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">ကလောင်အမည် (ရေးသားသူ)</label>
+          <input type="text" id="input-book-author" placeholder="ဥပမာ - မောင်နွေဦး" class="w-full rounded-xl border border-theme px-3.5 py-2.5 text-sm focus:outline-none" style="background-color: var(--bg-app);" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">အမျိုးအစား</label>
+          <select id="input-book-genre" class="w-full rounded-xl border border-theme px-3.5 py-2.5 text-sm focus:outline-none" style="background-color: var(--bg-app);">
+            <option value="ဝတ္ထုရှည် / ဝတ္ထုတို">ဝတ္ထုရှည် / ဝတ္ထုတို</option>
+            <option value="ကဗျာစုစည်းမှု">ကဗျာစုစည်းမှု</option>
+            <option value="ကဗျာနှင့် ဝတ္ထု ရောရာ">ကဗျာနှင့် ဝတ္ထု ရောရာ</option>
+            <option value="အက်ဆေးနှင့် ဆောင်းပါး">အက်ဆေးနှင့် ဆောင်းပါး</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">စာအုပ်အမှတ်အသား အရောင်</label>
+          <div class="flex items-center gap-2.5" id="color-picker-group">
+            <button type="button" onclick="selectCoverColor('#4f46e5')" data-color="#4f46e5" class="color-dot w-7 h-7 rounded-full bg-indigo-600 ring-2 ring-offset-2 ring-indigo-600"></button>
+            <button type="button" onclick="selectCoverColor('#059669')" data-color="#059669" class="color-dot w-7 h-7 rounded-full bg-emerald-600"></button>
+            <button type="button" onclick="selectCoverColor('#d97706')" data-color="#d97706" class="color-dot w-7 h-7 rounded-full bg-amber-600"></button>
+            <button type="button" onclick="selectCoverColor('#e11d48')" data-color="#e11d48" class="color-dot w-7 h-7 rounded-full bg-rose-600"></button>
+            <button type="button" onclick="selectCoverColor('#0284c7')" data-color="#0284c7" class="color-dot w-7 h-7 rounded-full bg-sky-600"></button>
+            <button type="button" onclick="selectCoverColor('#7c3aed')" data-color="#7c3aed" class="color-dot w-7 h-7 rounded-full bg-violet-600"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 flex items-center justify-end gap-2.5">
+        <button onclick="closeBookModal()" class="px-4 py-2 rounded-xl border border-theme text-xs sm:text-sm font-medium hover:opacity-80">မလုပ်တော့ပါ</button>
+        <button onclick="saveBookForm()" class="px-5 py-2 rounded-xl text-white text-xs sm:text-sm font-medium shadow-sm hover:opacity-90" style="background-color: var(--accent-color);">သိမ်းဆည်းမည်</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Export & Page Layout Modal (ထုတ်ယူခြင်း & စာမျက်နှာ အပြင်အဆင် ရွေးချယ်ခြင်း) -->
+  <div id="export-modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4 backdrop-blur-xs">
+    <div class="app-paper w-full max-w-lg rounded-2xl border p-6 shadow-xl">
+      <div class="flex items-center justify-between mb-4 pb-3 border-b border-theme">
+        <div class="flex items-center gap-2">
+          <i data-lucide="file-output" class="w-5 h-5" style="color: var(--accent-color);"></i>
+          <h3 class="text-lg font-bold">စာအုပ် / အခန်း ထုတ်ယူခြင်း</h3>
+        </div>
+        <button onclick="closeExportModal()" class="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <!-- Scope Selection -->
+        <div>
+          <label class="block text-xs font-semibold mb-1.5">ထုတ်ယူမည့် အတိုင်းအတာ</label>
+          <div class="grid grid-cols-2 gap-2.5">
+            <label class="flex items-center gap-2 p-3 rounded-xl border border-theme cursor-pointer" style="background-color: var(--bg-app);">
+              <input type="radio" name="export-scope" value="current" checked class="accent-indigo-600" />
+              <div>
+                <div class="text-xs font-semibold">လက်ရှိ အခန်းသာ</div>
+                <div class="text-[11px] text-muted">ယခုဖွင့်ထားသော စာမျက်နှာ</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-3 rounded-xl border border-theme cursor-pointer" style="background-color: var(--bg-app);">
+              <input type="radio" name="export-scope" value="book" class="accent-indigo-600" />
+              <div>
+                <div class="text-xs font-semibold">စာအုပ်တစ်အုပ်လုံး</div>
+                <div class="text-[11px] text-muted">မျက်နှာဖုံးနှင့် အခန်းအားလုံး</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Page Layout Settings (စာမျက်နှာ အပြင်အဆင် ရွေးချယ်ခြင်း) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">စာရွက် အရွယ်အစား</label>
+            <select id="export-page-size" class="w-full rounded-xl border border-theme px-3 py-2 text-xs sm:text-sm focus:outline-none" style="background-color: var(--bg-app);">
+              <option value="A4">A4 (စံနှုန်း စာရွက်)</option>
+              <option value="A5">A5 (ဝတ္ထု/ကဗျာ စာအုပ်ဆိုဒ်)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold mb-1.5">စာမျက်နှာ ဘေးအနားသတ် (Margins)</label>
+            <select id="export-margins" class="w-full rounded-xl border border-theme px-3 py-2 text-xs sm:text-sm focus:outline-none" style="background-color: var(--bg-app);">
+              <option value="normal">ပုံမှန် (Normal - 1 inch)</option>
+              <option value="wide">ကျယ် (Wide - 1.25 inch)</option>
+              <option value="narrow">ကျဉ်း (Narrow - 0.6 inch)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Include Metadata Checkbox -->
+        <label class="flex items-center gap-2 text-xs cursor-pointer pt-1">
+          <input type="checkbox" id="export-include-header" checked class="rounded accent-indigo-600" />
+          <span>စာအုပ်အမည်နှင့် ကလောင်အမည် ခေါင်းစီးထည့်သွင်းမည်</span>
+        </label>
+
+        <!-- Export Format Buttons (PDF / Word ဖိုင်အဖြစ် ထုတ်ယူခြင်း) -->
+        <div class="pt-3 border-t border-theme grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button onclick="exportToWord()" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-theme font-semibold text-xs sm:text-sm hover:opacity-85 transition shadow-xs" style="background-color: var(--bg-app);">
+            <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
+            <span>Word ဖိုင် (.doc) ထုတ်ယူရန်</span>
+          </button>
+
+          <button onclick="exportToPDF()" class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-white font-semibold text-xs sm:text-sm hover:opacity-90 transition shadow-sm" style="background-color: var(--accent-color);">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>PDF ဖိုင် / ပရင့်ထုတ်ရန်</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Custom Confirmation / Toast Message Box (No alert/confirm) -->
+  <div id="custom-dialog" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4 backdrop-blur-xs">
+    <div class="app-paper w-full max-w-sm rounded-2xl border p-5 shadow-xl">
+      <h4 id="dialog-title" class="font-bold text-base mb-2">အတည်ပြုရန်</h4>
+      <p id="dialog-message" class="text-xs sm:text-sm text-muted mb-5 leading-relaxed"></p>
+      <div class="flex justify-end gap-2">
+        <button id="dialog-cancel-btn" onclick="closeCustomDialog()" class="px-3.5 py-1.5 rounded-lg border border-theme text-xs font-medium">မလုပ်တော့ပါ</button>
+        <button id="dialog-confirm-btn" class="px-4 py-1.5 rounded-lg bg-red-600 text-white text-xs font-medium hover:bg-red-700">ဖျက်မည်</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-notification" class="fixed bottom-12 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium text-white flex items-center gap-2" style="background-color: var(--accent-color);">
+      <i data-lucide="info" class="w-4 h-4"></i>
+      <span id="toast-text">သိမ်းဆည်းပြီးပါပြီ</span>
+    </div>
+  </div>
+
+  <!-- Hidden Print Container for Clean PDF Export -->
+  <div id="print-container"></div>
+
+  <script>
+    // ==================== STATE & INITIAL SAMPLE DATA ====================
+    const STORAGE_KEY = 'kalaung_thwar_writing_app_v1';
+
+    const DEFAULT_DATA = {
+      activeBookId: 'book-sample-1',
+      activeChapterId: 'chap-sample-1',
+      settings: {
+        theme: 'light', // 'light' | 'sepia' | 'dark'
+        fontFamily: "'Noto Serif Myanmar', serif",
+        fontSize: 18,
+        indent: true
+      },
+      books: [
+        {
+          id: 'book-sample-1',
+          title: 'နွေဦးကဗျာနှင့် ဇာတ်လမ်းတိုများ',
+          author: 'မောင်နွေဦး',
+          genre: 'ကဗျာနှင့် ဝတ္ထု ရောရာ',
+          color: '#4f46e5',
+          notes: '• အဓိကဇာတ်ကောင် - ကိုသက် (ပန်းချီဆရာ၊ အသက် ၂၈ နှစ်)\n• ဇာတ်အိမ် - ဧရာဝတီမြစ်ကမ်းဘေး မြို့ငယ်လေးတစ်မြို့၏ နွေဦးရာသီ အလွမ်းဇာတ်လမ်း\n• ကဗျာကာရန် မှတ်စု - လေပြည်၊ ရွက်ကြွေ၊ မြစ်ရေ၊ နေခြည်',
+          chapters: [
+            {
+              id: 'chap-sample-1',
+              title: 'အခန်း (၁) - မြစ်ကမ်းဘေးက လက်ဖက်ရည်ဆိုင်',
+              mode: 'novel',
+              content: 'နံနက်ခင်း နေရောင်ခြည်နုနုသည် ဧရာဝတီမြစ်ပြင်ပေါ်သို့ ဖြာကျနေသည်။ မြစ်ဆိပ်အနီးရှိ သစ်သားလက်ဖက်ရည်ဆိုင်လေးထဲတွင် ရေနွေးငွေ့များ တလူလူတက်နေပြီး နံနက်ခင်း၏ အေးမြမှုကို အံတုနေသယောင် ရှိသည်။\n\nကိုသက်သည် ပြတင်းပေါက်ဘေး စားပွဲဝိုင်းတွင် ထိုင်ရင်း သူ၏ ပုံဆွဲစာအုပ်ဟောင်းလေးကို ဖွင့်လိုက်သည်။ လေပြည်တစ်ချက် အဝှေ့တွင် ကမ်းနားရှိ ကုက္ကိုပင်ကြီးဆီမှ ရွက်ဝါလေးများ တဖွဲဖွဲ ကြွေကျလာသည်ကို ငေးကြည့်နေမိသည်။\n\n"ဒီနွေဦးက အရင်နှစ်တွေထက် ပိုပြီး တိတ်ဆိတ်နေသလိုပဲ" ဟု သူ တိုးတိုးလေး ရေရွတ်လိုက်မိသည်။',
+              updatedAt: new Date().toISOString()
+            },
+            {
+              id: 'chap-sample-2',
+              title: 'နွေဦးလေပြည် (ကဗျာ)',
+              mode: 'poetry',
+              content: 'ရွက်ဝါတွေ တဖွဲဖွဲကြွေ\nနွေဦးရဲ့ လေပြည်ထဲမှာ\nအတိတ်ရဲ့ ပုံရိပ်တွေ တလွင့်လွင့်။\n\nမြစ်ရေပြင် ငြိမ်သက်သလို\nရင်ထဲက သံယောဇဉ်ကြိုး\nတိတ်တဆိတ် ခိုင်မြဲနေဆဲပါ။\n\nနေခြည်နု ဖြာကျချိန်တိုင်း\nမင်းရှိရာ အရပ်ဆီသို့\nကဗျာတစ်ပုဒ် ပါးလိုက်ပါရစေ။',
+              updatedAt: new Date().toISOString()
+            }
+          ]
+        }
+      ]
+    };
+
+    let appState = null;
+    let editingBookId = null; // null = creating new book, string = editing existing
+    let selectedCoverColor = '#4f46e5';
+    let saveTimeout = null;
+    let isFocusMode = false;
+
+    // ==================== INITIALIZATION ====================
+    window.onload = function () {
+      loadAppState();
+      applySettings();
+      renderSidebar();
+      loadActiveChapterIntoEditor();
+      lucide.createIcons();
+    };
+
+    function loadAppState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          appState = JSON.parse(raw);
+          if (!appState.books || appState.books.length === 0) {
+            appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
+          }
+        } else {
+          appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
+          persistState();
+        }
+      } catch (e) {
+        console.error('Storage load error:', e);
+        appState = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      }
+    }
+
+    function persistState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+        updateAutoSaveIndicator('saved');
+      } catch (e) {
+        console.error('Storage save error:', e);
+        showToast('သိမ်းဆည်းရာတွင် အခက်အခဲရှိနေပါသည်');
+      }
+    }
+
+    function triggerAutoSave() {
+      updateAutoSaveIndicator('saving');
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        persistState();
+      }, 450);
+    }
+
+    function updateAutoSaveIndicator(status) {
+      const el = document.getElementById('autosave-status');
+      const dot = document.getElementById('mobile-save-dot');
+      if (status === 'saving') {
+        el.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin text-amber-500"></i><span>သိမ်းဆည်းနေသည်...</span>`;
+        if (dot) dot.className = 'md:hidden w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+      } else {
+        el.innerHTML = `<i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-500"></i><span>အလိုအလျောက် သိမ်းဆည်းပြီးပါပြီ ✓</span>`;
+        if (dot) dot.className = 'md:hidden w-2 h-2 rounded-full bg-emerald-500';
+      }
+      lucide.createIcons();
+    }
+
+    // ==================== HELPERS ====================
+    function getActiveBook() {
+      let book = appState.books.find(b => b.id === appState.activeBookId);
+      if (!book && appState.books.length > 0) {
+        book = appState.books[0];
+        appState.activeBookId = book.id;
+      }
+      return book;
+    }
+
+    function getActiveChapter() {
+      const book = getActiveBook();
+      if (!book) return null;
+      let chap = book.chapters.find(c => c.id === appState.activeChapterId);
+      if (!chap && book.chapters.length > 0) {
+        chap = book.chapters[0];
+        appState.activeChapterId = chap.id;
+      }
+      return chap;
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast-notification');
+      document.getElementById('toast-text').textContent = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2600);
+    }
+
+    // ==================== SIDEBAR & BOOK ORGANIZATION ====================
+    function renderSidebar() {
+      const book = getActiveBook();
+      const selector = document.getElementById('book-selector');
+      selector.innerHTML = '';
+
+      appState.books.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.textContent = `📘 ${b.title}`;
+        if (book && b.id === book.id) opt.selected = true;
+        selector.appendChild(opt);
+      });
+
+      if (!book) return;
+
+      document.getElementById('book-author-display').textContent = `ရေးသားသူ - ${book.author || 'အမည်မသိ'}`;
+      document.getElementById('chapter-count-badge').textContent = toMyanmarDigits(book.chapters.length);
+      document.getElementById('book-notes-editor').value = book.notes || '';
+
+      // Render Chapters List
+      const listEl = document.getElementById('chapters-list');
+      listEl.innerHTML = '';
+
+      book.chapters.forEach((chap, index) => {
+        const isActive = chap.id === appState.activeChapterId;
+        const item = document.createElement('div');
+        item.className = `group flex items-center justify-between p-2.5 rounded-xl border transition cursor-pointer ${
+          isActive
+            ? 'border-indigo-500/50 shadow-2xs font-semibold'
+            : 'border-transparent hover:border-theme'
+        }`;
+        item.style.backgroundColor = isActive ? 'var(--bg-paper)' : 'transparent';
+
+        const iconName = chap.mode === 'poetry' ? 'sparkles' : 'file-text';
+        const modeTag = chap.mode === 'poetry' ? 'ကဗျာ' : 'ဝတ္ထု';
+
+        item.innerHTML = `
+          <div onclick="selectChapter('${chap.id}')" class="flex items-center gap-2.5 flex-1 min-w-0">
+            <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background-color: var(--bg-sidebar); color: ${isActive ? 'var(--accent-color)' : 'var(--text-secondary)'};">
+              <i data-lucide="${iconName}" class="w-3.5 h-3.5"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-xs sm:text-sm truncate">${escapeHtml(chap.title || 'ခေါင်းစဉ်မဲ့')}</div>
+              <div class="text-[10px] text-muted flex items-center gap-1.5">
+                <span>${modeTag}</span>
+                <span>•</span>
+                <span>${toMyanmarDigits(countWords(chap.content))} လုံး</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-0.5 opacity-80 sm:opacity-0 group-hover:opacity-100 transition">
+            ${index > 0 ? `<button onclick="moveChapter('${chap.id}', -1)" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10" title="အပေါ်ရွှေ့ရန်"><i data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>` : ''}
+            ${index < book.chapters.length - 1 ? `<button onclick="moveChapter('${chap.id}', 1)" class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10" title="အောက်ရွှေ့ရန်"><i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button>` : ''}
+            ${book.chapters.length > 1 ? `<button onclick="confirmDeleteChapter('${chap.id}')" class="p-1 rounded hover:bg-red-500/10 text-red-500" title="ဖျက်ရန်"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+
+      lucide.createIcons();
+    }
+
+    function selectBook(bookId) {
+      appState.activeBookId = bookId;
+      const book = getActiveBook();
+      if (book && book.chapters.length > 0) {
+        appState.activeChapterId = book.chapters[0].id;
+      }
+      persistState();
+      renderSidebar();
+      loadActiveChapterIntoEditor();
+    }
+
+    function selectChapter(chapterId) {
+      appState.activeChapterId = chapterId;
+      persistState();
+      renderSidebar();
+      loadActiveChapterIntoEditor();
+      // Close mobile sidebar after selecting
+      if (window.innerWidth < 1024) {
+        toggleSidebar(false);
+      }
+    }
+
+    function addNewChapter(mode = 'novel') {
+      const book = getActiveBook();
+      if (!book) return;
+      const count = book.chapters.length + 1;
+      const newChap = {
+        id: 'chap-' + Date.now(),
+        title: mode === 'poetry' ? `ကဗျာအသစ် (${toMyanmarDigits(count)})` : `အခန်း (${toMyanmarDigits(count)})`,
+        mode: mode,
+        content: '',
+        updatedAt: new Date().toISOString()
+      };
+      book.chapters.push(newChap);
+      appState.activeChapterId = newChap.id;
+      persistState();
+      renderSidebar();
+      loadActiveChapterIntoEditor();
+      document.getElementById('chapter-title-input').focus();
+      showToast(mode === 'poetry' ? 'ကဗျာစာမျက်နှာအသစ် ထည့်သွင်းပြီးပါပြီ' : 'အခန်းအသစ် ထည့်သွင်းပြီးပါပြီ');
+    }
+
+    function moveChapter(chapterId, direction) {
+      const book = getActiveBook();
+      if (!book) return;
+      const idx = book.chapters.findIndex(c => c.id === chapterId);
+      if (idx === -1) return;
+      const newIdx = idx + direction;
+      if (newIdx < 0 || newIdx >= book.chapters.length) return;
+
+      const temp = book.chapters[idx];
+      book.chapters[idx] = book.chapters[newIdx];
+      book.chapters[newIdx] = temp;
+
+      persistState();
+      renderSidebar();
+    }
+
+    function confirmDeleteChapter(chapterId) {
+      const book = getActiveBook();
+      if (!book || book.chapters.length <= 1) return;
+      const chap = book.chapters.find(c => c.id === chapterId);
+
+      openCustomDialog(
+        'အခန်းဖျက်ရန် အတည်ပြုပါ',
+        `"${chap?.title || 'ဤအခန်း'}" ကို အပြီးတိုင် ဖျက်ပစ်မည်မှာ သေချာပါသလား?`,
+        () => {
+          book.chapters = book.chapters.filter(c => c.id !== chapterId);
+          if (appState.activeChapterId === chapterId) {
+            appState.activeChapterId = book.chapters[0].id;
+          }
+          persistState();
+          renderSidebar();
+          loadActiveChapterIntoEditor();
+          showToast('ဖျက်သိမ်းပြီးပါပြီ');
+        }
+      );
+    }
+
+    function switchSidebarTab(tab) {
+      const tabChap = document.getElementById('tab-chapters');
+      const tabNotes = document.getElementById('tab-notes');
+      const panelChap = document.getElementById('panel-chapters');
+      const panelNotes = document.getElementById('panel-notes');
+
+      if (tab === 'chapters') {
+        tabChap.classList.remove('border-transparent', 'text-muted');
+        tabChap.style.borderColor = 'var(--accent-color)';
+        tabNotes.classList.add('border-transparent', 'text-muted');
+        tabNotes.style.borderColor = 'transparent';
+        panelChap.classList.remove('hidden');
+        panelNotes.classList.add('hidden');
+        panelNotes.classList.remove('flex');
+      } else {
+        tabNotes.classList.remove('border-transparent', 'text-muted');
+        tabNotes.style.borderColor = 'var(--accent-color)';
+        tabChap.classList.add('border-transparent', 'text-muted');
+        tabChap.style.borderColor = 'transparent';
+        panelNotes.classList.remove('hidden');
+        panelNotes.classList.add('flex');
+        panelChap.classList.add('hidden');
+      }
+    }
+
+    function handleNotesInput() {
+      const book = getActiveBook();
+      if (!book) return;
+      book.notes = document.getElementById('book-notes-editor').value;
+      triggerAutoSave();
+    }
+
+    function addQuickNoteTemplate() {
+      const notesEl = document.getElementById('book-notes-editor');
+      const template = `\n--- မှတ်စုအသစ် ---\n• ဇာတ်ကောင်အမည်: \n• စရိုက်လက္ခဏာ: \n• အဓိက အဖြစ်အပျက် / ကာရန်: \n`;
+      notesEl.value += template;
+      handleNotesInput();
+    }
+
+    // ==================== BOOK MODAL (CREATE / EDIT / DELETE) ====================
+    function openNewBookModal() {
+      editingBookId = null;
+      document.getElementById('book-modal-title').textContent = 'စာအုပ်အသစ် ဖန်တီးရန်';
+      document.getElementById('input-book-title').value = '';
+      document.getElementById('input-book-author').value = '';
+      document.getElementById('input-book-genre').value = 'ဝတ္ထုရှည် / ဝတ္ထုတို';
+      selectCoverColor('#4f46e5');
+      document.getElementById('book-modal').classList.remove('hidden');
+      document.getElementById('book-modal').classList.add('flex');
+      document.getElementById('input-book-title').focus();
+    }
+
+    function openEditBookModal() {
+      const book = getActiveBook();
+      if (!book) return;
+      editingBookId = book.id;
+      document.getElementById('book-modal-title').textContent = 'စာအုပ်အချက်အလက် ပြင်ဆင်ရန်';
+      document.getElementById('input-book-title').value = book.title;
+      document.getElementById('input-book-author').value = book.author || '';
+      document.getElementById('input-book-genre').value = book.genre || 'ဝတ္ထုရှည် / ဝတ္ထုတို';
+      selectCoverColor(book.color || '#4f46e5');
+      document.getElementById('book-modal').classList.remove('hidden');
+      document.getElementById('book-modal').classList.add('flex');
+    }
+
+    function closeBookModal() {
+      document.getElementById('book-modal').classList.add('hidden');
+      document.getElementById('book-modal').classList.remove('flex');
+    }
+
+    function selectCoverColor(color) {
+      selectedCoverColor = color;
+      document.querySelectorAll('.color-dot').forEach(dot => {
+        if (dot.dataset.color === color) {
+          dot.classList.add('ring-2', 'ring-offset-2');
+        } else {
+          dot.classList.remove('ring-2', 'ring-offset-2');
+        }
+      });
+    }
+
+    function saveBookForm() {
+      const title = document.getElementById('input-book-title').value.trim();
+      const author = document.getElementById('input-book-author').value.trim() || 'ကလောင်ရှင်';
+      const genre = document.getElementById('input-book-genre').value;
+
+      if (!title) {
+        showToast('ကျေးဇူးပြု၍ စာအုပ်အမည် ထည့်သွင်းပါ');
+        return;
+      }
+
+      if (editingBookId) {
+        const book = appState.books.find(b => b.id === editingBookId);
+        if (book) {
+          book.title = title;
+          book.author = author;
+          book.genre = genre;
+          book.color = selectedCoverColor;
+        }
+        showToast('စာအုပ်အချက်အလက် ပြင်ဆင်ပြီးပါပြီ');
+      } else {
+        const isPoetryBook = genre.includes('ကဗျာ') && !genre.includes('ဝတ္ထု');
+        const firstChapId = 'chap-' + Date.now();
+        const newBook = {
+          id: 'book-' + Date.now(),
+          title,
+          author,
+          genre,
+          color: selectedCoverColor,
+          notes: '',
+          chapters: [
+            {
+              id: firstChapId,
+              title: isPoetryBook ? 'ကဗျာ (၁)' : 'အခန်း (၁)',
+              mode: isPoetryBook ? 'poetry' : 'novel',
+              content: '',
+              updatedAt: new Date().toISOString()
+            }
+          ]
+        };
+        appState.books.unshift(newBook);
+        appState.activeBookId = newBook.id;
+        appState.activeChapterId = firstChapId;
+        showToast(`"${title}" စာအုပ်အသစ် ဖန်တီးပြီးပါပြီ`);
+      }
+
+      persistState();
+      renderSidebar();
+      loadActiveChapterIntoEditor();
+      closeBookModal();
+    }
+
+    function confirmDeleteBook() {
+      if (appState.books.length <= 1) {
+        showToast('အနည်းဆုံး စာအုပ်တစ်အုပ် ရှိနေရပါမည်');
+        return;
+      }
+      const book = getActiveBook();
+      openCustomDialog(
+        'စာအုပ်ဖျက်ရန် အတည်ပြုပါ',
+        `"${book.title}" စာအုပ်နှင့် အတွင်းရှိ အခန်းများအားလုံးကို ဖျက်ပစ်မည်မှာ သေချာပါသလား?`,
+        () => {
+          appState.books = appState.books.filter(b => b.id !== book.id);
+          appState.activeBookId = appState.books[0].id;
+          appState.activeChapterId = appState.books[0].chapters[0].id;
+          persistState();
+          renderSidebar();
+          loadActiveChapterIntoEditor();
+          showToast('စာအုပ်ကို ဖျက်သိမ်းပြီးပါပြီ');
+        }
+      );
+    }
+
+    // ==================== EDITOR & DUAL WRITING MODES ====================
+    function loadActiveChapterIntoEditor() {
+      const book = getActiveBook();
+      const chap = getActiveChapter();
+      if (!book || !chap) return;
+
+      document.getElementById('chapter-title-input').value = chap.title || '';
+      document.getElementById('writing-editor').value = chap.content || '';
+      document.getElementById('editor-book-subtitle').textContent = book.title;
+
+      applyWritingModeUI(chap.mode || 'novel');
+      updateStats();
+    }
+
+    function setWritingMode(mode) {
+      const chap = getActiveChapter();
+      if (!chap) return;
+      chap.mode = mode;
+      applyWritingModeUI(mode);
+      renderSidebar();
+      triggerAutoSave();
+      updateStats();
+    }
+
+    function applyWritingModeUI(mode) {
+      const editor = document.getElementById('writing-editor');
+      const titleInput = document.getElementById('chapter-title-input');
+      const btnNovel = document.getElementById('btn-mode-novel');
+      const btnPoetry = document.getElementById('btn-mode-poetry');
+      const modePill = document.getElementById('editor-mode-pill');
+      const indentBtn = document.getElementById('btn-indent-toggle');
+
+      if (mode === 'poetry') {
+        editor.classList.remove('mode-novel', 'indent-active');
+        editor.classList.add('mode-poetry');
+        titleInput.style.textAlign = 'center';
+        editor.placeholder = 'ကဗျာစာသားများကို လွတ်လပ်စွာ သီကုံးရေးဖွဲ့ပါ...\n(အပိုဒ်ခွဲရန် Enter နှစ်ချက်နှိပ်ပါ)';
+
+        btnPoetry.style.backgroundColor = 'var(--bg-paper)';
+        btnPoetry.style.color = 'var(--accent-color)';
+        btnPoetry.classList.add('shadow-2xs');
+        btnNovel.style.backgroundColor = 'transparent';
+        btnNovel.style.color = 'var(--text-secondary)';
+        btnNovel.classList.remove('shadow-2xs');
+
+        modePill.textContent = '✨ ကဗျာ မျက်နှာပြင်';
+        indentBtn.classList.add('hidden');
+      } else {
+        editor.classList.remove('mode-poetry');
+        editor.classList.add('mode-novel');
+        if (appState.settings.indent) editor.classList.add('indent-active');
+        titleInput.style.textAlign = 'left';
+        editor.placeholder = 'ဝတ္ထုဇာတ်လမ်း အကြောင်းအရာများကို ဤနေရာတွင် စတင်ရေးသားပါ...';
+
+        btnNovel.style.backgroundColor = 'var(--bg-paper)';
+        btnNovel.style.color = 'var(--accent-color)';
+        btnNovel.classList.add('shadow-2xs');
+        btnPoetry.style.backgroundColor = 'transparent';
+        btnPoetry.style.color = 'var(--text-secondary)';
+        btnPoetry.classList.remove('shadow-2xs');
+
+        modePill.textContent = '📖 ဝတ္ထု မျက်နှာပြင်';
+        indentBtn.classList.remove('hidden');
+      }
+    }
+
+    function handleEditorInput() {
+      const chap = getActiveChapter();
+      if (!chap) return;
+
+      chap.title = document.getElementById('chapter-title-input').value;
+      chap.content = document.getElementById('writing-editor').value;
+      chap.updatedAt = new Date().toISOString();
+
+      updateStats();
+      renderSidebar();
+      triggerAutoSave();
+    }
+
+    function insertSceneBreak() {
+      const editor = document.getElementById('writing-editor');
+      const start = editor.selectionStart;
+      const end = editor.selectionEnd;
+      const insertText = '\n\n* * *\n\n';
+      editor.value = editor.value.substring(0, start) + insertText + editor.value.substring(end);
+      editor.selectionStart = editor.selectionEnd = start + insertText.length;
+      editor.focus();
+      handleEditorInput();
+    }
+
+    // ==================== LIVE WORD, CHARACTER & LINE COUNTER ====================
+    function countWords(text) {
+      if (!text || !text.trim()) return 0;
+      // Split by whitespace and Myanmar punctuation (၊ ။) for realistic Burmese word/phrase count
+      const tokens = text
+        .trim()
+        .split(/[\s\u104A\u104B]+/)
+        .filter(t => t.length > 0);
+      return tokens.length;
+    }
+
+    function updateStats() {
+      const text = document.getElementById('writing-editor').value || '';
+      const chap = getActiveChapter();
+      const isPoetry = chap && chap.mode === 'poetry';
+
+      const words = countWords(text);
+      const chars = text.replace(/\s/g, '').length;
+      const lines = text.trim() === '' ? 0 : text.split(/\r\n|\r|\n/).filter(l => l.trim() !== '').length;
+      const readMins = Math.max(1, Math.ceil(words / 180));
+
+      document.getElementById('stat-words').textContent = toMyanmarDigits(words);
+      document.getElementById('stat-chars').textContent = toMyanmarDigits(chars);
+      document.getElementById('stat-lines-label').innerHTML = `${isPoetry ? 'ကဗျာကြောင်းရေ' : 'စာကြောင်းရေ'}: <strong id="stat-lines" class="font-semibold" style="color: var(--text-primary);">${toMyanmarDigits(lines)}</strong>`;
+      document.getElementById('stat-read-time').textContent = `ဖတ်ရှုချိန်: ~${toMyanmarDigits(readMins)} မိနစ်`;
+    }
+
+    // ==================== TYPOGRAPHY & THEME SETTINGS ====================
+    function applySettings() {
+      const { theme, fontFamily, fontSize, indent } = appState.settings;
+      
+      // Theme
+      document.body.classList.remove('theme-sepia', 'theme-dark');
+      if (theme === 'sepia') document.body.classList.add('theme-sepia');
+      if (theme === 'dark') document.body.classList.add('theme-dark');
+
+      // Font Family & Size
+      document.documentElement.style.setProperty('--editor-font', fontFamily);
+      document.documentElement.style.setProperty('--editor-size', fontSize + 'px');
+      document.getElementById('font-family-select').value = fontFamily;
+      document.getElementById('font-size-display').textContent = fontSize + 'px';
+
+      // Indent
+      const editor = document.getElementById('writing-editor');
+      const indentBtn = document.getElementById('btn-indent-toggle');
+      if (indent && editor.classList.contains('mode-novel')) {
+        editor.classList.add('indent-active');
+        indentBtn.style.borderColor = 'var(--accent-color)';
+      } else {
+        editor.classList.remove('indent-active');
+        indentBtn.style.borderColor = 'var(--border-color)';
+      }
+    }
+
+    function setTheme(themeName) {
+      appState.settings.theme = themeName;
+      applySettings();
+      persistState();
+    }
+
+    function changeFontFamily(fontVal) {
+      appState.settings.fontFamily = fontVal;
+      applySettings();
+      persistState();
+    }
+
+    function adjustFontSize(delta) {
+      const current = appState.settings.fontSize;
+      const next = Math.min(28, Math.max(14, current + delta));
+      appState.settings.fontSize = next;
+      applySettings();
+      persistState();
+    }
+
+    function toggleIndent() {
+      appState.settings.indent = !appState.settings.indent;
+      applySettings();
+      persistState();
+    }
+
+    function toggleSidebar(forceState) {
+      const sidebar = document.getElementById('left-sidebar');
+      const backdrop = document.getElementById('sidebar-backdrop');
+      const isOpen = !sidebar.classList.contains('-translate-x-full');
+      const shouldOpen = forceState !== undefined ? forceState : !isOpen;
+
+      if (shouldOpen) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function toggleFocusMode() {
+      isFocusMode = !isFocusMode;
+      const sidebar = document.getElementById('left-sidebar');
+      const btn = document.getElementById('btn-focus');
+
+      if (isFocusMode) {
+        sidebar.classList.add('lg:hidden');
+        btn.style.borderColor = 'var(--accent-color)';
+        showToast('အာရုံစူးစိုက်မှု မုဒ် ဖွင့်လိုက်ပါပြီ');
+      } else {
+        sidebar.classList.remove('lg:hidden');
+        btn.style.borderColor = 'var(--border-color)';
+      }
+    }
+
+    // ==================== EXPORT TO WORD (.doc) & PDF / PRINT ====================
+    function openExportModal() {
+      document.getElementById('export-modal').classList.remove('hidden');
+      document.getElementById('export-modal').classList.add('flex');
+      lucide.createIcons();
+    }
+
+    function closeExportModal() {
+      document.getElementById('export-modal').classList.add('hidden');
+      document.getElementById('export-modal').classList.remove('flex');
+    }
+
+    function buildExportDocumentHTML() {
+      const book = getActiveBook();
+      const activeChap = getActiveChapter();
+      const scope = document.querySelector('input[name="export-scope"]:checked').value;
+      const pageSize = document.getElementById('export-page-size').value;
+      const marginType = document.getElementById('export-margins').value;
+      const includeHeader = document.getElementById('export-include-header').checked;
+
+      const marginMap = {
+        normal: '25.4mm',
+        wide: '31.75mm',
+        narrow: '15.2mm'
+      };
+      const marginVal = marginMap[marginType] || '25.4mm';
+      const chaptersToExport = scope === 'book' ? book.chapters : [activeChap];
+
+      let bodyHtml = '';
+
+      // Title Page / Header
+      if (includeHeader) {
+        if (scope === 'book') {
+          bodyHtml += `
+            <div style="text-align: center; padding-top: 80px; padding-bottom: 60px; page-break-after: always;">
+              <p style="font-size: 13pt; color: #555; margin-bottom: 12px;">${escapeHtml(book.genre || '')}</p>
+              <h1 style="font-size: 26pt; font-weight: bold; margin-bottom: 20px; line-height: 1.5;">${escapeHtml(book.title)}</h1>
+              <p style="font-size: 15pt; margin-top: 30px;">ရေးသားသူ - <strong>${escapeHtml(book.author || '')}</strong></p>
+            </div>
+          `;
+        } else {
+          bodyHtml += `
+            <div style="text-align: right; font-size: 10pt; color: #666; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 24px;">
+              ${escapeHtml(book.title)} — ${escapeHtml(book.author || '')}
+            </div>
+          `;
+        }
+      }
+
+      // Chapters Content
+      chaptersToExport.forEach((chap, idx) => {
+        const isPoetry = chap.mode === 'poetry';
+        const pageBreakClass = idx > 0 ? 'page-break' : '';
+        const paragraphs = (chap.content || '').split(/\n/);
+
+        let formattedContent = '';
+        if (isPoetry) {
+          formattedContent = `<div class="print-poem" style="text-align: center; line-height: 2.2; font-size: 13pt; white-space: pre-wrap;">${escapeHtml(chap.content || '')}</div>`;
+        } else {
+          formattedContent = `<div class="print-novel" style="text-align: justify; line-height: 2.0; font-size: 13pt;">` +
+            paragraphs
+              .map(p => p.trim() === '' ? '<br/>' : `<p style="text-indent: 2em; margin: 0 0 10pt 0;">${escapeHtml(p)}</p>`)
+              .join('') +
+            `</div>`;
+        }
+
+        bodyHtml += `
+          <div class="${pageBreakClass}" style="margin-bottom: 40px;">
+            <h2 style="font-size: 18pt; font-weight: bold; text-align: ${isPoetry ? 'center' : 'left'}; margin-bottom: 20pt; line-height: 1.5;">
+              ${escapeHtml(chap.title || 'ခေါင်းစဉ်မဲ့')}
+            </h2>
+            ${formattedContent}
+          </div>
+        `;
+      });
+
+      return {
+        bookTitle: book.title,
+        chapTitle: activeChap.title,
+        scope,
+        pageSize,
+        marginVal,
+        bodyHtml
+      };
+    }
+
+    function exportToWord() {
+      const docData = buildExportDocumentHTML();
+      const wordHtml = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office'
+              xmlns:w='urn:schemas-microsoft-com:office:word'
+              xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <meta charset="utf-8">
+          <title>${escapeHtml(docData.bookTitle)}</title>
+          <style>
+            @page {
+              size: ${docData.pageSize};
+              margin: ${docData.marginVal};
+            }
+            body {
+              font-family: 'Padauk', 'Myanmar3', 'Noto Serif Myanmar', serif;
+              color: #000000;
+            }
+            .page-break {
+              page-break-before: always;
+            }
+          </style>
+        </head>
+        <body>
+          ${docData.bodyHtml}
+        </body>
+        </html>
+      `;
+
+      // UTF-8 BOM ensures Burmese Unicode displays properly in Microsoft Word
+      const blob = new Blob(['\ufeff', wordHtml], {
+        type: 'application/msword;charset=utf-8'
+      });
+
+      const fileNameBase = docData.scope === 'book' ? docData.bookTitle : `${docData.bookTitle}_${docData.chapTitle}`;
+      const safeFileName = fileNameBase.replace(/[\\/:*?"<>|]/g, '_') + '.doc';
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = safeFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      closeExportModal();
+      showToast('Word ဖိုင် (.doc) ဒေါင်းလုဒ်ဆွဲပြီးပါပြီ ✓');
+    }
+
+    function exportToPDF() {
+      const docData = buildExportDocumentHTML();
+      const printContainer = document.getElementById('print-container');
+
+      // Inject dynamic @page rules for selected page size (A4 / A5) & margins
+      let dynamicPageStyle = document.getElementById('dynamic-print-page-style');
+      if (!dynamicPageStyle) {
+        dynamicPageStyle = document.createElement('style');
+        dynamicPageStyle.id = 'dynamic-print-page-style';
+        document.head.appendChild(dynamicPageStyle);
+      }
+      dynamicPageStyle.innerHTML = `
+        @media print {
+          @page {
+            size: ${docData.pageSize};
+            margin: ${docData.marginVal};
+          }
+        }
+      `;
+
+      printContainer.innerHTML = docData.bodyHtml;
+      closeExportModal();
+
+      setTimeout(() => {
+        window.print();
+      }, 200);
+    }
+
+    // ==================== CUSTOM CONFIRM DIALOG & UTILITIES ====================
+    function openCustomDialog(title, message, onConfirm) {
+      document.getElementById('dialog-title').textContent = title;
+      document.getElementById('dialog-message').textContent = message;
+      const confirmBtn = document.getElementById('dialog-confirm-btn');
+      
+      const newBtn = confirmBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+      newBtn.addEventListener('click', () => {
+        closeCustomDialog();
+        onConfirm();
+      });
+
+      document.getElementById('custom-dialog').classList.remove('hidden');
+      document.getElementById('custom-dialog').classList.add('flex');
+    }
+
+    function closeCustomDialog() {
+      document.getElementById('custom-dialog').classList.add('hidden');
+      document.getElementById('custom-dialog').classList.remove('flex');
+    }
+
+    function toMyanmarDigits(num) {
+      const mmDigits = ['၀', '၁', '၂', '၃', '၄', '၅', '၆', '၇', '၈', '၉'];
+      return String(num).replace(/\d/g, d => mmDigits[d]);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
